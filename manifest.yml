@@ -1,0 +1,27 @@
+modules:
+  jira:issueGlance:
+    - key: gitlab-connect-glance
+      function: glance
+      title: Gitlab Connect
+      label: Manage Gitlab Repository
+      description: Link Issue with Gitlab Repositories
+  jira:adminPage:
+    - key: gitlab-connect-admin
+      function: admin
+      title: Gitlab Connect
+      label: Gitlab Connect Settings
+      description: Link Issues with Gitlab Repositories
+  function:
+    - key: glance
+      handler: glance.run
+    - key: admin
+      handler: admin.run
+app:
+  id: ari:cloud:ecosystem::app/1e84da81-d3ca-48c4-b0b4-a7ea96514b20
+  name: gitlab-connect
+permissions:
+  scopes:
+    - read:jira-user
+    - read:jira-work
+    - write:jira-work
+    - storage:app
