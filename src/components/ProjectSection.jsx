@@ -40,17 +40,16 @@ export const ProjectSection = (props) => {
     );
 
     const onBranchAdd = async (name) => {
-        let branch;
-
         try {
-            branch = await bridge.createBranch(name, project);
+            const branch = await bridge.createBranch(name, project);
+            project.branches.push(branch.name);
+            await onUpdate(project);
+            setError(null);
         }
-        catch (error) {
-            branch = await bridge.fetchBranch(name, project);
+        catch (e) {
+            setError(e.message);
         }
 
-        project.branches.push(branch.name);
-        await onUpdate(project);
         setDialogOpen(false);
     };
 

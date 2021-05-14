@@ -1,6 +1,6 @@
 // noinspection ES6UnusedImports
 import ForgeUI from "@forge/ui";
-import {Button, ButtonSet, StatusLozenge, Text, Link} from "@forge/ui";
+import {Button, StatusLozenge, Text, Link} from "@forge/ui";
 import {Cell, Head, Row, Table} from "@forge/ui";
 
 
@@ -22,6 +22,7 @@ export const BranchTable = (props) => {
                     </Text>
                 </Cell>
                 <Cell/>
+                {editable && <Cell/>}
             </Head>
             {
                 branches.map((branch) => (
@@ -32,24 +33,34 @@ export const BranchTable = (props) => {
                             </Text>
                         </Cell>
                         <Cell>
-                            <ButtonSet>
-                                <Button
-                                    text="Create MR"
-                                    appearance="subtle-link"
-                                    icon="bitbucket-pullrequests"
-                                    onClick={() => onMergeRequestCreate(branch)}
-                                />
-                                {
-                                    editable &&
+                            {
+                                (branch.mergeRequest) ? (
+                                    <Text>
+                                        <Link href={branch.mergeRequest.web_url}>
+                                            {`(!${branch.mergeRequest.id})`}
+                                        </Link>
+                                    </Text>
+                                ) : (
                                     <Button
-                                        text="Delete"
+                                        text="Create MR"
                                         appearance="subtle-link"
-                                        icon="editor-remove"
-                                        onClick={() => onRemove(branch)}
+                                        icon="bitbucket-pullrequests"
+                                        onClick={() => onMergeRequestCreate(branch)}
                                     />
-                                }
-                            </ButtonSet>
+                                )
+                            }
                         </Cell>
+                        {
+                            editable &&
+                            <Cell>
+                                <Button
+                                    text="Delete"
+                                    appearance="subtle-link"
+                                    icon="editor-remove"
+                                    onClick={() => onRemove(branch)}
+                                />
+                            </Cell>
+                        }
                     </Row>
                 ))
             }
@@ -63,6 +74,7 @@ export const BranchTable = (props) => {
                     />
                 </Cell>
                 <Cell/>
+                {editable && <Cell/>}
             </Row>
         </Table>
     );

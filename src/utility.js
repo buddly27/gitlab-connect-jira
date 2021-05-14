@@ -69,27 +69,31 @@ export class GitlabBridge {
 
         const branches = await result.json();
 
-        return branches.map((branch) => ({
-            name: branch.name,
-            merged: branch.merged,
-            web_url: branch.web_url,
-        }));
+        return Promise.all(
+            branches.map(async (branch) => ({
+                name: branch.name,
+                merged: branch.merged,
+                web_url: branch.web_url,
+                mergeRequest: await this.fetchMergeRequestForBranch(branch, project, false)
+            }))
+        );
     }
 
     async fetchBranch(name, project) {
         const path = `${this._url}/projects/${project.id}/repository/branches/${name}`;
 
         const result = await api.fetch(path, {method: "GET", headers: this._headers});
-
-        const data = await result.json();
-        if (!data.name) {
-            throw Error(`The branch could not be fetched: ${data.message}`);
+        if (!result.ok) {
+            throw Error("The branch could not be fetched.");
         }
 
+        const branch = await result.json();
+
         return {
-            name: data.name,
-            merged: data.merged,
-            web_url: data.web_url,
+            name: branch.name,
+            merged: branch.merged,
+            web_url: branch.web_url,
+            mergeRequest: await this.fetchMergeRequestForBranch(branch, project, false)
         };
     }
 
@@ -111,15 +115,24 @@ export class GitlabBridge {
             })
         });
 
-        const data = await result.json();
-        if (!data.name) {
-            throw Error(`The branch could not be created: ${data.message}`);
+        if (!result.ok) {
+            if (isJSONEncoded(result)) {
+                const data = await result.json();
+                if (data.message === "Branch already exists") {
+                    return this.fetchBranch(name, project);
+                }
+            }
+
+            throw Error("The branch could not be created.");
         }
 
+        const branch = await result.json();
+
         return {
-            name: data.name,
-            merged: data.merged,
-            web_url: data.web_url,
+            name: branch.name,
+            merged: branch.merged,
+            web_url: branch.web_url,
+            mergeRequest: await this.fetchMergeRequestForBranch(branch, project, false)
         };
     }
 
@@ -141,22 +154,49 @@ export class GitlabBridge {
         }));
     }
 
-    async fetchMergeRequestFromTitle(title, project) {
+    async fetchMergeRequestFromTitle(title, project, raising = true) {
         const path = `${this._url}/projects/${project.id}/merge_requests` +
             `?search=${encodeURI(title)}&in=title`;
 
         const result = await api.fetch(path, {method: "GET", headers: this._headers});
+        if (!result.ok) {
+            throw Error("The merge request could not be fetched.");
+        }
 
-        const data = await result.json();
-        if (!Array.isArray(data) || data.length === 0) {
-            throw Error(`The merge request could not be fetched.`);
+        const mergeRequests = await result.json();
+        if (mergeRequests.length === 0) {
+            if (!raising) { return null; }
+            throw Error("The merge request could not be fetched.");
         }
 
         return {
-            id: data[0]["iid"],
-            title: data[0].title,
-            state: data[0].state,
-            web_url: data[0].web_url,
+            id: mergeRequests[0]["iid"],
+            title: mergeRequests[0].title,
+            state: mergeRequests[0].state,
+            web_url: mergeRequests[0].web_url,
+        };
+    }
+
+    async fetchMergeRequestForBranch(branch, project, raising = true) {
+        const path = `${this._url}/projects/${project.id}/merge_requests` +
+            `?source_branch=${branch.name}`;
+
+        const result = await api.fetch(path, {method: "GET", headers: this._headers});
+        if (!result.ok) {
+            throw Error("The merge request could not be fetched.");
+        }
+
+        const mergeRequests = await result.json();
+        if (mergeRequests.length === 0) {
+            if (!raising) { return null; }
+            throw Error("The merge request could not be fetched.");
+        }
+
+        return {
+            id: mergeRequests[0]["iid"],
+            title: mergeRequests[0].title,
+            state: mergeRequests[0].state,
+            web_url: mergeRequests[0].web_url,
         };
     }
 
@@ -192,3 +232,9 @@ export class GitlabBridge {
         };
     }
 }
+
+
+const isJSONEncoded = (response) => {
+    const contentType = response.headers.get("content-type");
+    return !!(contentType && contentType.indexOf("application/json") !== -1);
+};
