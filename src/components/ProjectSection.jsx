@@ -1,5 +1,5 @@
 // noinspection ES6UnusedImports
-import ForgeUI, {ModalDialog} from "@forge/ui";
+import ForgeUI from "@forge/ui";
 import {Button, Fragment, Link, Strong, Text, useState, useEffect} from "@forge/ui";
 import {ErrorSection} from "./ErrorSection";
 import {BranchTable} from "./BranchTable";
