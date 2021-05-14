@@ -1,6 +1,7 @@
 // noinspection ES6UnusedImports
-import ForgeUI from "@forge/ui";
+import ForgeUI, {ModalDialog} from "@forge/ui";
 import {Button, Fragment, Link, Strong, Text, useState, useEffect} from "@forge/ui";
+import {ErrorSection} from "./ErrorSection";
 import {BranchTable} from "./BranchTable";
 import {MergeRequestTable} from "./MergeRequestTable";
 import {NewBranchDialog} from "./NewBranchDialog";
@@ -12,18 +13,28 @@ export const ProjectSection = (props) => {
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [branches, setBranches] = useState([]);
     const [mergeRequests, setMergeRequests] = useState([]);
+    const [error, setError] = useState(null);
 
     useEffect(
         async () => {
-            const allBranches = await bridge.fetchBranches(project);
-            setBranches(
-                allBranches.filter((data) => project.branches.includes(data.name))
-            );
+            try {
+                const allBranches = await bridge.fetchBranches(project);
+                const filteredBranches = allBranches
+                    .filter((data) => project.branches.includes(data.name));
+                setBranches(filteredBranches);
 
-            const allMergeRequests = await bridge.fetchMergeRequests(project);
-            setMergeRequests(
-                allMergeRequests.filter((data) => project.mergeRequests.includes(data.id))
-            );
+                const allMergeRequests = await bridge.fetchMergeRequests(project);
+                const filteredMergeRequests = allMergeRequests
+                    .filter((data) => project.mergeRequests.includes(data.id));
+                setMergeRequests(filteredMergeRequests);
+
+                setError(null);
+            }
+            catch (e) {
+                setError(e.message);
+                setBranches([]);
+                setMergeRequests([]);
+            }
         },
         [project]
     );
@@ -82,6 +93,7 @@ export const ProjectSection = (props) => {
                     <Link href={project.web_url}>{project.name}</Link>
                 </Strong>
             </Text>
+            {error && <ErrorSection title="Connection Error" message={error}/>}
             {
                 editable &&
                 <Button

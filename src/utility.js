@@ -46,9 +46,9 @@ export class GitlabBridge {
             throw Error("The projects could not be fetched.");
         }
 
-        const data = await result.json();
+        const projects = await result.json();
 
-        return data.map((project) => ({
+        return projects.map((project) => ({
             id: project.id,
             name: project["name_with_namespace"],
             web_url: project.web_url,
@@ -63,13 +63,13 @@ export class GitlabBridge {
         const path = `${this._url}/projects/${project.id}/repository/branches`;
 
         const result = await api.fetch(path, {method: "GET", headers: this._headers});
-
-        const data = await result.json();
-        if (!Array.isArray(data)) {
-            throw Error(`The branches could not be fetched.`);
+        if (!result.ok) {
+            throw Error("The branches could not be fetched.");
         }
 
-        return data.map((branch) => ({
+        const branches = await result.json();
+
+        return branches.map((branch) => ({
             name: branch.name,
             merged: branch.merged,
             web_url: branch.web_url,
@@ -127,13 +127,13 @@ export class GitlabBridge {
         const path = `${this._url}/projects/${project.id}/merge_requests`;
 
         const result = await api.fetch(path, {method: "GET", headers: this._headers});
-
-        const data = await result.json();
-        if (!Array.isArray(data)) {
-            throw Error(`The merge requests could not be fetched.`);
+        if (!result.ok) {
+            throw Error("The merge requests could not be fetched.");
         }
 
-        return data.map((mergeRequest) => ({
+        const mergeRequests = await result.json();
+
+        return mergeRequests.map((mergeRequest) => ({
             id: mergeRequest["iid"],
             title: mergeRequest.title,
             state: mergeRequest.state,

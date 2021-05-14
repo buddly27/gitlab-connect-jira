@@ -21,8 +21,8 @@ export const NewProjectDialog = (props) => {
                 setProjects(filteredProjects);
                 setError(null);
             }
-            catch (error) {
-                setError(error.message);
+            catch (e) {
+                setError(e.message);
             }
         },
         [filterBy]
