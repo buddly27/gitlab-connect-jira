@@ -34,7 +34,11 @@ export class GitlabBridge {
             return [];
         }
 
-        const path = `${this._url}/projects?search=${encodeURI(filterBy)}&membership=true`;
+        const path = `${this._url}/projects` +
+            `?search=${encodeURI(filterBy)}` +
+            "&min_access_level=30" +
+            "&simple=true";
+
         const identifiers = existingProjects.map((project) => project.id);
 
         const result = await api.fetch(path, {method: "GET", headers: this._headers});
@@ -43,6 +47,7 @@ export class GitlabBridge {
         }
 
         const data = await result.json();
+        console.log(data)
 
         return data.map((project) => ({
             id: project.id,
