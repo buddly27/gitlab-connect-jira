@@ -44,7 +44,6 @@ export const ProjectSection = (props) => {
             const branch = await bridge.createBranch(name, project);
             project.branches.push(branch.name);
             await onUpdate(project);
-            setError(null);
         }
         catch (e) {
             setError(e.message);
@@ -54,35 +53,42 @@ export const ProjectSection = (props) => {
     };
 
     const onBranchRemove = async (branch) => {
-        await bridge.deleteBranch(branch.name, project);
-        project.branches = project.branches
-            .filter((branchName) => branchName !== branch.name);
-
-        await onUpdate(project);
+        try {
+            await bridge.deleteBranch(branch.name, project);
+            project.branches = project.branches
+                .filter((branchName) => branchName !== branch.name);
+            await onUpdate(project);
+        }
+        catch (e) {
+            setError(e.message);
+        }
     };
 
     const onMergeRequestAdd = async (branch) => {
-        let mergeRequest;
-
         // TODO: Add UI to change the MR title.
         const title = defaultNames.mergeRequest;
 
         try {
-            mergeRequest = await bridge.createMergeRequest(title, branch, project);
+            const mergeRequest = await bridge.createMergeRequest(title, branch, project);
+            project.mergeRequests.push(mergeRequest.id);
+            await onUpdate(project);
         }
-        catch (error) {
-            mergeRequest = await bridge.fetchMergeRequestFromTitle(title, project);
+        catch (e) {
+            setError(e.message);
         }
-        project.mergeRequests.push(mergeRequest.id);
-        await onUpdate(project);
     };
 
     const onMergeRequestRemove = async (mergeRequest) => {
-        await bridge.deleteMergeRequest(mergeRequest.id, project);
-        project.mergeRequests = project.mergeRequests
-            .filter((mergeRequestID) => mergeRequestID !== mergeRequest.id);
+        try {
+            await bridge.deleteMergeRequest(mergeRequest.id, project);
+            project.mergeRequests = project.mergeRequests
+                .filter((mergeRequestID) => mergeRequestID !== mergeRequest.id);
 
-        await onUpdate(project);
+            await onUpdate(project);
+        }
+        catch (e) {
+            setError(e.message);
+        }
     };
 
     return (
