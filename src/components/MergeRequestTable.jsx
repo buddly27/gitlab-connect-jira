@@ -42,7 +42,9 @@ export const MergeRequestTable = (props) => {
                     <Row>
                         <Cell>
                             <Text>
-                                <Link href={mergeRequest.web_url}>{mergeRequest.title}</Link>
+                                <Link href={mergeRequest.web_url}>
+                                    {`${mergeRequest.title} (!${mergeRequest.id})`}
+                                </Link>
                             </Text>
                         </Cell>
                         <Cell>
