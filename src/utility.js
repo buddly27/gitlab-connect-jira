@@ -25,8 +25,8 @@ export const computeDefaultNames = async (issueId) => {
 export class GitlabBridge {
 
     constructor(gitlabUrl, accessToken) {
-        this._url = gitlabUrl;
-        this._token = accessToken;
+        this._url = `${gitlabUrl}/api/v4`;
+        this._headers = {Authorization: `Bearer ${accessToken}`};
     }
 
     async searchProjects(filterBy, existingProjects = []) {
@@ -34,18 +34,15 @@ export class GitlabBridge {
             return [];
         }
 
-        const path = `${this._url}/api/v4/projects?search=${encodeURI(filterBy)}&membership=true`;
+        const path = `${this._url}/projects?search=${encodeURI(filterBy)}&membership=true`;
         const identifiers = existingProjects.map((project) => project.id);
 
-        const result = await api.fetch(path, {
-            method: "GET",
-            headers: {Authorization: `Bearer ${this._token}`}
-        });
+        const result = await api.fetch(path, {method: "GET", headers: this._headers});
+        if (!result.ok) {
+            throw Error("The projects could not be fetched.");
+        }
 
         const data = await result.json();
-        if (!Array.isArray(data)) {
-            throw Error(`The projects could not be fetched.`);
-        }
 
         return data.map((project) => ({
             id: project.id,
@@ -59,12 +56,9 @@ export class GitlabBridge {
     }
 
     async fetchBranches(project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/repository/branches`;
+        const path = `${this._url}/projects/${project.id}/repository/branches`;
 
-        const result = await api.fetch(path, {
-            method: "GET",
-            headers: {Authorization: `Bearer ${this._token}`}
-        });
+        const result = await api.fetch(path, {method: "GET", headers: this._headers});
 
         const data = await result.json();
         if (!Array.isArray(data)) {
@@ -79,12 +73,9 @@ export class GitlabBridge {
     }
 
     async fetchBranch(name, project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/repository/branches/${name}`;
+        const path = `${this._url}/projects/${project.id}/repository/branches/${name}`;
 
-        const result = await api.fetch(path, {
-            method: "GET",
-            headers: {Authorization: `Bearer ${this._token}`}
-        });
+        const result = await api.fetch(path, {method: "GET", headers: this._headers});
 
         const data = await result.json();
         if (!data.name) {
@@ -99,20 +90,17 @@ export class GitlabBridge {
     }
 
     async deleteBranch(name, project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/repository/branches/${name}`;
+        const path = `${this._url}/projects/${project.id}/repository/branches/${name}`;
 
-        await api.fetch(path, {
-            method: "DELETE",
-            headers: {Authorization: `Bearer ${this._token}`}
-        });
+        await api.fetch(path, {method: "DELETE", headers: this._headers});
     }
 
     async createBranch(name, project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/repository/branches`;
+        const path = `${this._url}/projects/${project.id}/repository/branches`;
 
         const result = await api.fetch(path, {
             method: "POST",
-            headers: {Authorization: `Bearer ${this._token}`},
+            headers: this._headers,
             body: JSON.stringify({
                 branch: name,
                 ref: project.defaultBranch,
@@ -132,12 +120,9 @@ export class GitlabBridge {
     }
 
     async fetchMergeRequests(project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/merge_requests`;
+        const path = `${this._url}/projects/${project.id}/merge_requests`;
 
-        const result = await api.fetch(path, {
-            method: "GET",
-            headers: {Authorization: `Bearer ${this._token}`}
-        });
+        const result = await api.fetch(path, {method: "GET", headers: this._headers});
 
         const data = await result.json();
         if (!Array.isArray(data)) {
@@ -153,13 +138,10 @@ export class GitlabBridge {
     }
 
     async fetchMergeRequestFromTitle(title, project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/merge_requests` +
+        const path = `${this._url}/projects/${project.id}/merge_requests` +
             `?search=${encodeURI(title)}&in=title`;
 
-        const result = await api.fetch(path, {
-            method: "GET",
-            headers: {Authorization: `Bearer ${this._token}`}
-        });
+        const result = await api.fetch(path, {method: "GET", headers: this._headers});
 
         const data = await result.json();
         if (!Array.isArray(data) || data.length === 0) {
@@ -175,20 +157,17 @@ export class GitlabBridge {
     }
 
     async deleteMergeRequest(id, project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/merge_requests/${id}`;
+        const path = `${this._url}/projects/${project.id}/merge_requests/${id}`;
 
-        await api.fetch(path, {
-            method: "DELETE",
-            headers: {Authorization: `Bearer ${this._token}`}
-        });
+        await api.fetch(path, {method: "DELETE", headers: this._headers});
     }
 
     async createMergeRequest(title, branch, project) {
-        const path = `${this._url}/api/v4/projects/${project.id}/merge_requests`;
+        const path = `${this._url}/projects/${project.id}/merge_requests`;
 
         const result = await api.fetch(path, {
             method: "POST",
-            headers: {Authorization: `Bearer ${this._token}`},
+            headers: this._headers,
             body: JSON.stringify({
                 title: title,
                 source_branch: branch.name,

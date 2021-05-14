@@ -2,6 +2,7 @@
 import ForgeUI from "@forge/ui";
 import {Form, ModalDialog, TextField, useEffect, useState} from "@forge/ui";
 import {ProjectTable} from "./ProjectTable";
+import {ErrorSection} from "./ErrorSection";
 
 
 export const NewProjectDialog = (props) => {
@@ -9,13 +10,20 @@ export const NewProjectDialog = (props) => {
 
     const [filterBy, setFilterBy] = useState("");
     const [projects, setProjects] = useState([]);
+    const [error, setError] = useState(null);
 
     const onFilterUpdate = (data) => setFilterBy(data["search"]);
 
     useEffect(
         async () => {
-            const filteredProjects = await bridge.searchProjects(filterBy, existingProjects);
-            setProjects(filteredProjects);
+            try {
+                const filteredProjects = await bridge.searchProjects(filterBy, existingProjects);
+                setProjects(filteredProjects);
+                setError(null);
+            }
+            catch (error) {
+                setError(error.message);
+            }
         },
         [filterBy]
     );
@@ -25,6 +33,8 @@ export const NewProjectDialog = (props) => {
             header="Connect a New Gitlab Project"
             onClose={onClose}
         >
+            {error && <ErrorSection title="Connection Error" message={error}/>}
+
             <Form
                 submitButtonText="Search"
                 onSubmit={onFilterUpdate}
