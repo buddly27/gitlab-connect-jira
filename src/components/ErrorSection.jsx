@@ -11,4 +11,4 @@ export const ErrorSection = (props) => {
             <Text>{message}</Text>
         </SectionMessage>
     );
-}
+};

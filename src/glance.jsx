@@ -1,24 +1,21 @@
-import {properties, storage} from "@forge/api";
 // noinspection ES6UnusedImports
 import ForgeUI from "@forge/ui";
-import {IssueGlance, Fragment, Button} from "@forge/ui";
-import {render, useProductContext, useState} from "@forge/ui";
-import {PROJECTS_KEY, TOKEN_KEY, URL_KEY} from "./symbol";
-import {ErrorSection, NewProjectDialog, ProjectSection} from "./components"
+import {IssueGlance, Fragment, Button, render, useProductContext, useState} from "@forge/ui";
+import {ErrorSection, NewProjectDialog, ProjectSection} from "./components";
 import * as utility from "./utility";
+import * as store from "./store";
 
 
 const App = () => {
     const context = useProductContext();
     const {issueKey} = context.platformContext;
 
-    const [url] = useState(storage.get(URL_KEY));
-    const [token] = useState(storage.get(TOKEN_KEY));
-    const [defaultBranchName] = useState(utility.computeBranchName(issueKey))
+    const [url] = useState(store.getGitlabUrl());
+    const [token] = useState(store.getAccessToken());
+    const [defaultNames] = useState(utility.computeDefaultNames(issueKey));
     const [isDialogOpen, setDialogOpen] = useState(false);
-    const [projects, setProjects] = useState(
-        properties.onJiraIssue(issueKey).get(PROJECTS_KEY)
-    );
+    const [projects, setProjects] = useState(store.getGitlabProjects(issueKey));
+    const [editable, setEditable] = useState(false);
 
     if (!url || !token) {
         return (
@@ -32,48 +29,29 @@ const App = () => {
         );
     }
 
-    const onProjectsDiscover = (filterBy) =>
-        utility.fetchProjects(projects, filterBy, url, token);
-
-    const onProjectAdd = (project) => {
-        const _projects = utility.appendProject(project, projects);
-        properties.onJiraIssue(issueKey).set(PROJECTS_KEY, _projects);
-        setProjects(_projects);
-    };
-    const onProjectUpdate = (project) => {
-        const _projects = utility.updateProject(project, projects);
-        properties.onJiraIssue(issueKey).set(PROJECTS_KEY, _projects);
-        setProjects(_projects);
-    };
-    const onProjectRemove = (project) => {
-        const _projects = utility.removeProject(project, projects);
-        properties.onJiraIssue(issueKey).set(PROJECTS_KEY, _projects);
-        setProjects(_projects);
-    };
-
-
-    const onBranchCreate = (project, name, sourceBranch) =>
-        utility.createBranch(name, sourceBranch, project, url, token);
-    const onBranchDelete = (project, name) =>
-        utility.deleteBranch(name, project, url, token);
-    const onBranchesDiscover = (project) =>
-        utility.fetchBranches(project, url, token);
-    const onMergeRequestsDiscover = (project) =>
-        utility.fetchMergeRequests(project, url, token);
+    const bridge = new utility.GitlabBridge(url, token);
 
     return (
         <Fragment>
             {
-                projects && projects.map((project) => (
+                projects.map((project) => (
                     <ProjectSection
                         project={project}
-                        defaultBranchName={defaultBranchName}
-                        onUpdate={onProjectUpdate}
-                        onRemove={onProjectRemove}
-                        onBranchCreate={onBranchCreate}
-                        onBranchDelete={onBranchDelete}
-                        onBranchesDiscover={onBranchesDiscover}
-                        onMergeRequestsDiscover={onMergeRequestsDiscover}
+                        bridge={bridge}
+                        defaultNames={defaultNames}
+                        editable={editable}
+                        onUpdate={
+                            (project) => {
+                                const _projects = store.updateGitlabProject(issueKey, project);
+                                setProjects(_projects);
+                            }
+                        }
+                        onRemove={
+                            () => {
+                                const _projects = store.removeGitlabProject(issueKey, project);
+                                setProjects(_projects);
+                            }
+                        }
                     />
                 ))
             }
@@ -82,14 +60,21 @@ const App = () => {
                 onClick={() => setDialogOpen(true)}
                 icon="add-circle"
             />
+            <Button
+                text={editable ? "Set Non Editable" : "Set Editable"}
+                onClick={() => setEditable(!editable)}
+                icon="edit"
+            />
             {
                 isDialogOpen &&
                 <NewProjectDialog
+                    bridge={bridge}
+                    existingProjects={projects}
                     onClose={() => setDialogOpen(false)}
-                    onProjectsDiscover={onProjectsDiscover}
                     onProjectAdd={
                         (project) => {
-                            onProjectAdd(project);
+                            const _projects = store.addGitlabProject(issueKey, project);
+                            setProjects(_projects);
                             setDialogOpen(false);
                         }
                     }
@@ -98,7 +83,6 @@ const App = () => {
         </Fragment>
     );
 };
-
 
 export const run = render(
     <IssueGlance>

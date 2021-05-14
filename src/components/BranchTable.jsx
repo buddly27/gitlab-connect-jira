@@ -5,7 +5,7 @@ import {Cell, Head, Row, Table} from "@forge/ui";
 
 
 export const BranchTable = (props) => {
-    const {branches, onCreate, onRemove, onMergeRequestCreate} = props;
+    const {editable, branches, onCreate, onRemove, onMergeRequestCreate} = props;
 
     return (
         <Table>
@@ -39,12 +39,15 @@ export const BranchTable = (props) => {
                                     icon="bitbucket-pullrequests"
                                     onClick={() => onMergeRequestCreate(branch)}
                                 />
-                                <Button
-                                    text="Delete"
-                                    appearance="subtle-link"
-                                    icon="editor-remove"
-                                    onClick={() => onRemove(branch.name)}
-                                />
+                                {
+                                    editable &&
+                                    <Button
+                                        text="Delete"
+                                        appearance="subtle-link"
+                                        icon="editor-remove"
+                                        onClick={() => onRemove(branch)}
+                                    />
+                                }
                             </ButtonSet>
                         </Cell>
                     </Row>
@@ -62,5 +65,7 @@ export const BranchTable = (props) => {
                 <Cell/>
             </Row>
         </Table>
-    )
-}
+    );
+};
+
+

@@ -7,58 +7,73 @@ import {NewBranchDialog} from "./NewBranchDialog";
 
 
 export const ProjectSection = (props) => {
-    const {
-        project,
-        defaultBranchName,
-        onUpdate,
-        onRemove,
-        onBranchCreate,
-        onBranchDelete,
-        onBranchesDiscover,
-        onMergeRequestsDiscover,
-    } = props;
+    const {project, bridge, defaultNames, editable, onUpdate, onRemove} = props;
 
-    const [isBranchDialogOpen, setBranchDialogOpen] = useState(false);
-    const [allBranches, setAllBranches] = useState([]);
+    const [isDialogOpen, setDialogOpen] = useState(false);
     const [branches, setBranches] = useState([]);
     const [mergeRequests, setMergeRequests] = useState([]);
 
     useEffect(
         async () => {
-            const _allBranches = await onBranchesDiscover(project);
-            setAllBranches(_allBranches)
+            const allBranches = await bridge.fetchBranches(project);
+            setBranches(
+                allBranches.filter((data) => project.branches.includes(data.name))
+            );
 
-            const names = project.branches.map((branch) => branch.name);
-            const _branches = _allBranches.filter((branch) => {
-                return names.includes(branch.name)
-            });
-            setBranches(_branches)
-
-            const _mergeRequests = await onMergeRequestsDiscover(project);
-            setMergeRequests(_mergeRequests)
-
-            if (names.length !== _branches.length) {
-                project.branches = _branches;
-                await onUpdate(project);
-            }
+            const allMergeRequests = await bridge.fetchMergeRequests(project);
+            setMergeRequests(
+                allMergeRequests.filter((data) => project.mergeRequests.includes(data.id))
+            );
         },
         [project]
     );
 
-    const onBranchAdd = async (name, sourceBranch) => {
-        const branch = await onBranchCreate(project, name, sourceBranch);
-        project.branches.push(branch);
+    const onBranchAdd = async (name) => {
+        let branch;
+
+        try {
+            branch = await bridge.createBranch(name, project);
+        }
+        catch (error) {
+            branch = await bridge.fetchBranch(name, project);
+        }
+
+        project.branches.push(branch.name);
+        await onUpdate(project);
+        setDialogOpen(false);
+    };
+
+    const onBranchRemove = async (branch) => {
+        await bridge.deleteBranch(branch.name, project);
+        project.branches = project.branches
+            .filter((branchName) => branchName !== branch.name);
 
         await onUpdate(project);
-        setBranchDialogOpen(false);
-    }
+    };
 
-    const onBranchRemove = async (name) => {
-        await onBranchDelete(project, name);
-        project.branches = project.branches.filter((branch) => branch.name !== name);
+    const onMergeRequestAdd = async (branch) => {
+        let mergeRequest;
+
+        // TODO: Add UI to change the MR title.
+        const title = defaultNames.mergeRequest;
+
+        try {
+            mergeRequest = await bridge.createMergeRequest(title, branch, project);
+        }
+        catch (error) {
+            mergeRequest = await bridge.fetchMergeRequestFromTitle(title, project);
+        }
+        project.mergeRequests.push(mergeRequest.id);
+        await onUpdate(project);
+    };
+
+    const onMergeRequestRemove = async (mergeRequest) => {
+        await bridge.deleteMergeRequest(mergeRequest.id, project);
+        project.mergeRequests = project.mergeRequests
+            .filter((mergeRequestID) => mergeRequestID !== mergeRequest.id);
 
         await onUpdate(project);
-    }
+    };
 
     return (
         <Fragment>
@@ -67,31 +82,36 @@ export const ProjectSection = (props) => {
                     <Link href={project.web_url}>{project.name}</Link>
                 </Strong>
             </Text>
-            <Button
-                text="Remove Project"
-                appearance="subtle-link"
-                icon="editor-remove"
-                onClick={() => onRemove(project)}
-            />
+            {
+                editable &&
+                <Button
+                    text="Remove Project"
+                    appearance="subtle-link"
+                    icon="editor-remove"
+                    onClick={() => onRemove(project)}
+                />
+            }
             <BranchTable
+                editable={editable}
                 branches={branches}
-                onCreate={() => setBranchDialogOpen(true)}
+                onCreate={() => setDialogOpen(true)}
                 onRemove={onBranchRemove}
-                onMergeRequestCreate={}
+                onMergeRequestCreate={onMergeRequestAdd}
             />
             <MergeRequestTable
+                editable={editable}
                 mergeRequests={mergeRequests}
+                onRemove={onMergeRequestRemove}
             />
             {
-                isBranchDialogOpen &&
+                isDialogOpen &&
                 <NewBranchDialog
-                    defaultName={defaultBranchName}
-                    allBranches={allBranches}
+                    defaultName={defaultNames.branch}
                     project={project}
-                    onClose={() => setBranchDialogOpen(false)}
+                    onClose={() => setDialogOpen(false)}
                     onBranchAdd={onBranchAdd}
                 />
             }
         </Fragment>
     );
-}
+};

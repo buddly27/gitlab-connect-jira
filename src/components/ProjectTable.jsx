@@ -35,5 +35,5 @@ export const ProjectTable = (props) => {
                 </Row>
             ))}
         </Table>
-    )
-}
+    );
+};

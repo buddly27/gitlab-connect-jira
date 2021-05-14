@@ -5,16 +5,16 @@ import {ProjectTable} from "./ProjectTable";
 
 
 export const NewProjectDialog = (props) => {
-    const {onClose, onProjectsDiscover, onProjectAdd} = props;
+    const {bridge, existingProjects, onClose, onProjectAdd} = props;
 
     const [filterBy, setFilterBy] = useState("");
     const [projects, setProjects] = useState([]);
 
-    const onFilterUpdate = (data) => setFilterBy(data["search"])
+    const onFilterUpdate = (data) => setFilterBy(data["search"]);
 
     useEffect(
         async () => {
-            const filteredProjects = await onProjectsDiscover(filterBy);
+            const filteredProjects = await bridge.searchProjects(filterBy, existingProjects);
             setProjects(filteredProjects);
         },
         [filterBy]
@@ -41,5 +41,5 @@ export const NewProjectDialog = (props) => {
                 onSubmit={onProjectAdd}
             />
         </ModalDialog>
-    )
-}
+    );
+};
