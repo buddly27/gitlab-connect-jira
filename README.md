@@ -1,7 +1,9 @@
 # Forge Gitlab Connect
 
-This Forge application allows to connect a Jira ticket to one or several Gitlab
-Repositories in a non-intrusive way (no indexing).
+This simple Forge application allows to connect a Jira ticket to one or several Gitlab
+Repositories.
+
+![demonstration](image/app_demo.gif)
 
 ## Requirements
 
