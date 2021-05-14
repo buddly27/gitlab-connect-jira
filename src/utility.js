@@ -99,8 +99,10 @@ export class GitlabBridge {
 
     async deleteBranch(name, project) {
         const path = `${this._url}/projects/${project.id}/repository/branches/${name}`;
-
-        await api.fetch(path, {method: "DELETE", headers: this._headers});
+        const result = await api.fetch(path, {method: "DELETE", headers: this._headers});
+        if (!result.ok) {
+            throw Error("The branch could not be removed.");
+        }
     }
 
     async createBranch(name, project) {
@@ -202,8 +204,11 @@ export class GitlabBridge {
 
     async deleteMergeRequest(id, project) {
         const path = `${this._url}/projects/${project.id}/merge_requests/${id}`;
+        const result = await api.fetch(path, {method: "DELETE", headers: this._headers});
+        if (!result.ok) {
+            throw Error("The branch could not be removed.");
+        }
 
-        await api.fetch(path, {method: "DELETE", headers: this._headers});
     }
 
     async createMergeRequest(title, branch, project) {
@@ -219,16 +224,17 @@ export class GitlabBridge {
             })
         });
 
-        const data = await result.json();
-        if (!data.id) {
-            throw Error(`The merge request could not be created: ${data.message}`);
+        if (!result.ok) {
+            throw Error("merge request could not be created.");
         }
 
+        const mergeRequest = await result.json();
+
         return {
-            id: data["iid"],
-            title: data.title,
-            state: data.state,
-            web_url: data.web_url,
+            id: mergeRequest["iid"],
+            title: mergeRequest.title,
+            state: mergeRequest.state,
+            web_url: mergeRequest.web_url,
         };
     }
 }
