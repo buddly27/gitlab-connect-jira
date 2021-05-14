@@ -47,7 +47,6 @@ export class GitlabBridge {
         }
 
         const data = await result.json();
-        console.log(data)
 
         return data.map((project) => ({
             id: project.id,
