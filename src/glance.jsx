@@ -84,6 +84,7 @@ const App = () => {
     );
 };
 
+// noinspection JSUnusedGlobalSymbols
 export const run = render(
     <IssueGlance>
         <App/>

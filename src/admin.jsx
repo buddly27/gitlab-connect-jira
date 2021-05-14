@@ -13,6 +13,7 @@ const App = () => (
     />
 );
 
+// noinspection JSUnusedGlobalSymbols
 export const run = render(
     <AdminPage>
         <App/>
